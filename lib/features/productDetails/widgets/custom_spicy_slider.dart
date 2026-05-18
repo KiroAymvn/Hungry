@@ -20,7 +20,18 @@ class CustomSpicySlider extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.network(productModel.image, height: 150, width: 200),
+            productModel.image.isEmpty
+                ? const SizedBox(height: 150, width: 200)
+                : Image.network(
+                    productModel.image,
+                    height: 150,
+                    width: 200,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox(
+                            height: 150,
+                            width: 200,
+                            child: Icon(Icons.image_not_supported)),
+                  ),
             CustomText(text: "${productModel.price} LE", color: AppColors.primary, fontSize: 30),
           ],
         ),

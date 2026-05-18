@@ -1,15 +1,13 @@
 import 'dart:io';
-import 'dart:math';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:hungry/core/constants/app_colors.dart';
-import 'package:hungry/core/network/api_error.dart';
-import 'package:hungry/core/utils/pref_helper.dart';
-import 'package:hungry/features/auth/data/auth_repo.dart';
+import 'package:hungry/features/auth/cubit/auth_cubit.dart';
+import 'package:hungry/features/auth/cubit/auth_state.dart';
 import 'package:hungry/features/auth/data/user_model.dart';
 import 'package:hungry/features/auth/screens/login_screen.dart';
 import 'package:hungry/shared/custom_button.dart';
@@ -26,455 +24,472 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _adressController = TextEditingController();
-  TextEditingController? _visaController = TextEditingController();
+  // Controllers for the read-only display fields
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
 
-  late TextEditingController _nameControllerU = TextEditingController(text: _nameController.text);
-  late TextEditingController _emailControllerU = TextEditingController(text: _emailController.text);
-  late TextEditingController _addressControllerU = TextEditingController(text: _adressController.text);
-  late TextEditingController? _visaControllerU = TextEditingController(text: _visaController?.text);
-  late TextEditingController? _visaError = TextEditingController(text: "No Visa");
+  // Controllers for the edit-mode modal fields
+  final TextEditingController _nameEditController = TextEditingController();
+  final TextEditingController _emailEditController = TextEditingController();
+  final TextEditingController _addressEditController = TextEditingController();
+  final TextEditingController _visaEditController = TextEditingController();
 
-  AuthRepo _authRepo = AuthRepo();
-  static UserModel? userModel;
-  bool isLoading = true;
-  bool updateLoading = false;
-  String? selectedImage;
-
-  //PICK IMAGE
-  Future<void> pickImage() async {
-    final pickImage = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickImage != null) {
-      setState(() {
-        selectedImage = pickImage.path;
-      });
-    }
-  }
-
-  //GET PROFILE
-  Future<void> getProfileData() async {
-    try {
-      final user = await _authRepo.getProfileData();
-      setState(() {
-        userModel = user;
-      });
-      print(PrefHelper.getToken());
-    } catch (e) {
-      String errorMessage = "Unhandled exception";
-      if (e is ApiError) {
-        print(e);
-        errorMessage = e.toString();
-      }
-      else if(e is DioException){
-        errorMessage=e.type.toString();
-      }
-      print(errorMessage);
-      scaffoldMessengerError(context, errorMessage);
-    }
-  }
-
-  //Update Profile
-  Future<void> updateProfileData() async {
-    setState(() {
-      updateLoading = true;
-    });
-    try {
-      final user = await _authRepo.updateProfileData(
-        name: _nameControllerU.text.trim(),
-        email: _emailControllerU.text.trim(),
-        address: _addressControllerU.text.trim(),
-        image: selectedImage,
-        visa: _visaControllerU?.text,
-      );
-
-      setState(() {
-        userModel = user;
-        updateLoading = false;
-      });
-      scaffoldMessengerError(context, "Update Successfully", color: Colors.green);
-      getProfileData();
-    } catch (e) {
-      setState(() {
-        updateLoading = false;
-      });
-      String mess = "Failed to update";
-      if (e is ApiError) {
-        mess = e.toString();
-      }
-      scaffoldMessengerError(context, mess);
-    }
-  }
-
-  bool logoutLoading = false;
-
-  //LOGOUT
-  Future<void> logout() async {
-    try {
-      setState(() {
-        logoutLoading = true;
-      });
-      final response = await _authRepo.logout();
-      setState(() {
-        logoutLoading = false;
-      });
-      scaffoldMessengerError(context, response["message"], color: Colors.green);
-      await Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
-    } catch (e) {
-      setState(() {
-        logoutLoading = false;
-      });
-      if (!mounted) return;
-      if (e is ApiError) {
-        scaffoldMessengerError(context, "logout failed", color: Colors.red);
-      }
-    }
-  }
-
-   bool isGuest=false;
-//Auto Login
-
-  Future<void> autoLogin() async {
-    final user = await _authRepo.autoLogin();
-    if (!mounted) return;   // ← الحل السحري
-
-    setState(() => isGuest = _authRepo.isGuest);
-    if (user != null) setState(() => userModel = user);
-  }
-  // Future<void> getIsGuest() async {
-  //   bool? isGuest=await PrefHelper.isGuest();
-  //   setState(()  {
-  //     isGuest = isGuest;
-  //   });
-  // }
+  String? _selectedImagePath;
 
   @override
-  void initState() {
-    //function().then((v){}) --> to do what is inside the {} exactly
-    // after finishing the function imidiatly
-    autoLogin();
-
-    getProfileData().then((v) {
-      if (!mounted) return; // <<< يمنع أي crash
-      updateDataToUser();
-
-    });
-    // getIsGuest();
-    super.initState();
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
+    _nameEditController.dispose();
+    _emailEditController.dispose();
+    _addressEditController.dispose();
+    _visaEditController.dispose();
+    super.dispose();
   }
 
-  void updateDataToUser() {
-    if (!mounted) return;   // ← الحل السحري
+  // Fill the display controllers with the latest user data
+  void _populateControllers(UserModel user) {
+    _nameController.text = user.name;
+    _emailController.text = user.email;
+    _addressController.text = user.address ?? '';
+    _visaEditController.text = user.visa ?? '';
+  }
 
-    setState(() {
-      _nameController.text = userModel?.name.toString()??"no name";
-      _adressController.text = userModel?.address ?? "Unknown address";
-      _emailController.text = userModel?.email.toString()??"";
-      _visaController?.text = (userModel?.visa?.toString()) ??"555";
-    });
+  // Pick an image from the gallery
+  Future<void> _pickImage() async {
+    final picked =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => _selectedImagePath = picked.path);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if(isGuest==false && userModel!=null ){
-      return buildScaffoldProfileScreenInCaseOfUserAndLoading(context,false);
-    }
-    else if(isGuest==true){
-      return Scaffold(
-        backgroundColor: AppColors.primary,
-        body: GestureDetector(
-            onTap: (){
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen(),));
-            },
-            child: Center(child: CustomText(text: "Guest Mode",color: Colors.white,),)),
-      );
-    }else{
-      return buildScaffoldProfileScreenInCaseOfUserAndLoading(context,true);
-
-    }
-  }
-
-  Scaffold buildScaffoldProfileScreenInCaseOfUserAndLoading(BuildContext context,bool isLoading) {
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: AppColors.basic,
-        actions: [Padding(padding: const EdgeInsets.all(8.0), child: SvgPicture.asset("assets/icon/settings.svg"))],
-      ),
-      body:
-      RefreshIndicator(
-        backgroundColor: Colors.white,
-        color: AppColors.primary,
-        onRefresh: () async {
-          updateDataToUser();
-          await getProfileData();
-        },
-        child: GestureDetector(
-          onTap: () {
-            FocusScope.of(context).unfocus();
-          },
-          child: Skeletonizer(
-            enabled: isLoading,
-            enableSwitchAnimation: true,
-            effect: ShimmerEffect(
-              duration: Duration(seconds: 2),
-              baseColor: Colors.white,
-              highlightColor: Colors.grey,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SingleChildScrollView(
+    return BlocConsumer<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthLoggedOut) {
+          // Navigate to login screen after logout
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        } else if (state is AuthError) {
+          scaffoldMessengerError(context, state.message);
+        } else if (state is AuthUpdateSuccess) {
+          // Show success message and update the display fields
+          _populateControllers(state.user);
+          scaffoldMessengerError(context, 'Updated successfully',
+              color: Colors.green);
+        }
+      },
+      builder: (context, state) {
+        // ── GUEST MODE ──────────────────────────────────────────
+        if (state is AuthGuest) {
+          return Scaffold(
+            backgroundColor: AppColors.primary,
+            body: GestureDetector(
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+              child: Center(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Center(
-                      child: ClipOval(
-                        child: SizedBox(
-                          width: 120,
-                          height: 120,
-                          child: selectedImage != null
-                              ? Image.file(
-                            File(selectedImage!),
-                            fit: BoxFit.cover,
-                          )
-                              : (userModel?.image != null && userModel!.image!.isNotEmpty)
-                              ? Image.network(
-                            userModel!.image!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                              CupertinoIcons.profile_circled,
-                              size: 60,
+                    const Icon(CupertinoIcons.person_circle,
+                        color: Colors.white, size: 80),
+                    const Gap(20),
+                    CustomText(
+                      text: 'Guest Mode',
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    const Gap(10),
+                    CustomText(
+                      text: 'Tap to sign in',
+                      color: Colors.white70,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        // ── DETERMINE CURRENT USER AND LOADING FLAG ─────────────
+        UserModel? user;
+        bool isLoading = false;
+        bool isUpdateLoading = false;
+        bool isLogoutLoading = false;
+
+        if (state is AuthLoading) {
+          isLoading = true;
+        } else if (state is AuthSuccess) {
+          user = state.user;
+          // Populate controllers once when data arrives (won't override edits)
+          if (_nameController.text.isEmpty) _populateControllers(user);
+        } else if (state is AuthUpdateLoading) {
+          user = state.currentUser;
+          isUpdateLoading = true;
+        } else if (state is AuthUpdateSuccess) {
+          user = state.user;
+        } else if (state is AuthLogoutLoading) {
+          user = null;
+          isLogoutLoading = true;
+        }
+
+        // ── MAIN PROFILE SCAFFOLD ────────────────────────────────
+        return Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            backgroundColor: AppColors.basic,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SvgPicture.asset('assets/icon/settings.svg'),
+              ),
+            ],
+          ),
+          body: RefreshIndicator(
+            backgroundColor: Colors.white,
+            color: AppColors.primary,
+            onRefresh: () async {
+              context.read<AuthCubit>().getProfile();
+            },
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: Skeletonizer(
+                enabled: isLoading,
+                enableSwitchAnimation: true,
+                effect: const ShimmerEffect(
+                  duration: Duration(seconds: 2),
+                  baseColor: Colors.white,
+                  highlightColor: Colors.grey,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: [
+                        // ── PROFILE IMAGE ──────────────────────
+                        Center(
+                          child: ClipOval(
+                            child: SizedBox(
+                              width: 120,
+                              height: 120,
+                              child: _buildProfileImage(user),
                             ),
-                          )
-                              : const Icon(
-                            CupertinoIcons.person,
-                            size: 60,
                           ),
                         ),
-                      ),
-                    ),
-                    Gap(10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CustomButton(
-                          onTap: pickImage,
-                          text: "Upload Image",
-                          color: AppColors.primary,
-                          textColor: Colors.white,
-                          height: 45,
-                          width: 150,
-                          fontSize: 18,
+                        const Gap(10),
+                        // ── IMAGE BUTTONS ──────────────────────
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CustomButton(
+                              onTap: _pickImage,
+                              text: 'Upload Image',
+                              color: AppColors.primary,
+                              textColor: Colors.white,
+                              height: 45,
+                              width: 150,
+                              fontSize: 18,
+                            ),
+                            const Gap(10),
+                            CustomButton(
+                              onTap: () async {
+                                setState(() => _selectedImagePath = null);
+                                if (user != null) {
+                                  context.read<AuthCubit>().updateProfile(
+                                        currentUser: user,
+                                        name: _nameController.text,
+                                        email: _emailController.text,
+                                        address: _addressController.text,
+                                      );
+                                }
+                              },
+                              text: 'Delete image',
+                              color: AppColors.darkCoffee,
+                              textColor: AppColors.basic,
+                              height: 45,
+                              width: 150,
+                              fontSize: 18,
+                            ),
+                          ],
                         ),
-                        Gap(10),
-                        CustomButton(
-                          onTap: () async {
-                            setState(() {
-                              selectedImage = null;
-                            });
-                            await updateProfileData();
-                          },
-                          text: "Delete image",
-                          color: AppColors.darkCoffee,
-                          textColor: AppColors.basic,
-                          height: 45,
-                          width: 150,
-                          fontSize: 18,
+                        const Gap(10),
+                        // ── READ-ONLY FIELDS ───────────────────
+                        CustomProfileTextField(
+                          controller: _nameController,
+                          labelText: 'Name',
+                          textColor: AppColors.primary,
                         ),
+                        const Gap(20),
+                        CustomProfileTextField(
+                          controller: _emailController,
+                          labelText: 'Email',
+                        ),
+                        const Gap(20),
+                        CustomProfileTextField(
+                          controller: _addressController,
+                          labelText: 'Address',
+                        ),
+                        const Gap(20),
+                        const Divider(),
+                        const Gap(20),
+                        // ── VISA CARD ──────────────────────────
+                        if (user?.visa != null)
+                          ListTile(
+                            shape: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(20)),
+                            contentPadding:
+                                const EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 8),
+                            tileColor: const Color(0xff0d3e96),
+                            leading:
+                                Image.asset('assets/icon/visa.webp', width: 75),
+                            title: CustomText(text: 'Debit Card'),
+                          ),
+                        const Gap(180),
                       ],
                     ),
-                    Gap(10),
-                    CustomProfileTextField(controller: _nameController, labelText: "Name",textColor: AppColors.primary,),
-                    Gap(20),
-                    CustomProfileTextField(controller: _emailController, labelText: "Email"),
-                    Gap(20),
-                    CustomProfileTextField(controller: _adressController, labelText: "Address"),
-                    Gap(20),
-                    Divider(),
-                    Gap(20),
-                    userModel?.visa == null
-                        ? CustomText(text: "null visa")
-                        : ListTile(
-                      shape: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                      contentPadding: EdgeInsetsGeometry.symmetric(vertical: 8, horizontal: 8),
-                      tileColor: Color(0xff0d3e96),
-                      leading: Image.asset("assets/icon/visa.webp", width: 75),
-                      title: CustomText(text: "Debit Card"),
-                    ),
-                    Gap(180),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
-      bottomSheet: isLoading?SizedBox(): Container(
-        height: 80,
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            GestureDetector(
-              onTap: () => customShowModalBottomSheet(context),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
-                child: Row(
-                  children: [
-                    CustomText(text: "Edit Profile", color: Colors.white, fontSize: 18),
-                    Icon(Icons.edit, color: Colors.white),
-                  ],
+          // ── BOTTOM ACTION BAR ──────────────────────────────────
+          bottomSheet: isLoading
+              ? const SizedBox()
+              : Container(
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Edit profile button
+                      GestureDetector(
+                        onTap: () {
+                          if (user != null) {
+                            _nameEditController.text = user.name;
+                            _emailEditController.text = user.email;
+                            _addressEditController.text = user.address ?? '';
+                            _visaEditController.text = user.visa ?? '';
+                            _showEditModal(context, user);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 15),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              CustomText(
+                                  text: 'Edit Profile',
+                                  color: Colors.white,
+                                  fontSize: 18),
+                              const Icon(Icons.edit, color: Colors.white),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Logout button
+                      isLogoutLoading
+                          ? const CircularProgressIndicator()
+                          : GestureDetector(
+                              onTap: () =>
+                                  context.read<AuthCubit>().logout(),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 15),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: Border.all(
+                                      color: AppColors.primary, width: 2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  children: [
+                                    CustomText(
+                                        text: 'Logout',
+                                        color: AppColors.primary,
+                                        fontSize: 18),
+                                    Icon(Icons.logout,
+                                        color: AppColors.primary),
+                                  ],
+                                ),
+                              ),
+                            ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-            logoutLoading
-                ? CircularProgressIndicator()
-                : GestureDetector(
-              onTap: () {
-                print("bottom");
-                logout();
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  border: Border.all(color: AppColors.primary, width: 2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    CustomText(text: "Logout", color: AppColors.primary, fontSize: 18),
-                    Icon(Icons.login, color: AppColors.primary),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Future<dynamic> customShowModalBottomSheet(BuildContext context) {
+  // ── HELPER: PROFILE IMAGE ────────────────────────────────────────
+  Widget _buildProfileImage(UserModel? user) {
+    if (_selectedImagePath != null) {
+      return Image.file(File(_selectedImagePath!), fit: BoxFit.cover);
+    }
+    if (user?.image != null && user!.image!.isNotEmpty) {
+      return Image.network(
+        user.image!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            const Icon(CupertinoIcons.profile_circled, size: 60),
+      );
+    }
+    return const Icon(CupertinoIcons.person, size: 60);
+  }
+
+  // ── EDIT PROFILE MODAL SHEET ─────────────────────────────────────
+  Future<void> _showEditModal(BuildContext context, UserModel user) {
     return showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Recommended: allows the modal to resize with keyboard
-      builder: (context) {
+      isScrollControlled: true,
+      builder: (modalContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (_, setModalState) {
             return Padding(
-              // Add padding for keyboard visibility
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(modalContext).viewInsets.bottom),
               child: Container(
                 color: Colors.grey.shade600,
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 child: SingleChildScrollView(
-                  // Wrap in scroll view for safety
                   child: Column(
-                    mainAxisSize: MainAxisSize.min, // Use min size
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      CustomText(text: "Edit your Profile", color: Colors.white, fontWeight: FontWeight.bold),
-                      Gap(20),
+                      CustomText(
+                          text: 'Edit your Profile',
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
+                      const Gap(20),
                       CustomProfileTextField(
-                        controller: _nameControllerU,
-                        labelText: "name",
+                        controller: _nameEditController,
+                        labelText: 'Name',
                         read: false,
                         textFieldColor: AppColors.primary,
                         textAlign: TextAlign.center,
                       ),
-                      Gap(20),
+                      const Gap(20),
                       CustomProfileTextField(
-                        controller: _emailControllerU,
-                        labelText: "email",
+                        controller: _emailEditController,
+                        labelText: 'Email',
                         read: false,
                         textFieldColor: AppColors.primary,
                         textAlign: TextAlign.center,
                       ),
-                      Gap(20),
+                      const Gap(20),
                       CustomProfileTextField(
-                        controller: _addressControllerU,
-                        labelText: "Address",
+                        controller: _addressEditController,
+                        labelText: 'Address',
                         read: false,
                         textFieldColor: AppColors.primary,
                         textAlign: TextAlign.center,
                       ),
-                      Gap(20),
+                      const Gap(20),
                       CustomProfileTextField(
-                        iconData: CupertinoIcons.delete,
-                        onDelete: () {
-                          setState(() {
-                            _visaControllerU = null;
-                            print(_visaControllerU);
-                          });
-                        },
-                        keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
-                        controller: _visaControllerU ?? _visaError!,
-                        labelText: "Visa",
+                        controller: _visaEditController,
+                        labelText: 'Visa',
                         read: false,
                         textFieldColor: AppColors.primary,
                         textAlign: TextAlign.center,
+                        keyboardType: const TextInputType.numberWithOptions(),
                       ),
-                      Gap(20),
+                      const Gap(20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          // --- THE FIX IS HERE ---
-                          updateLoading
-                              ? CircularProgressIndicator(color: Colors.white)
-                              : GestureDetector(
-                                  onTap: () async {
-                                    // 1. Force the Modal to rebuild immediately to show the spinner
-                                    setModalState(() {
-                                      updateLoading = true;
-                                    });
-
-                                    // 2. Perform the update (this rebuilds the background screen)
-                                    await updateProfileData();
-
-                                    // 3. Close the modal if the context is still valid
-                                    // (Note: updateProfileData sets updateLoading to false at the end,
-                                    // but we pop the modal anyway so we don't need to repaint it)
-                                    if (context.mounted) {
-                                      Navigator.pop(context);
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        CustomText(text: "Save", color: Colors.white, fontSize: 18),
-                                        Icon(Icons.edit, color: Colors.white),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
+                          // Save button
+                          BlocBuilder<AuthCubit, AuthState>(
+                            builder: (ctx, state) {
+                              final isSaving = state is AuthUpdateLoading;
+                              return isSaving
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white)
+                                  : GestureDetector(
+                                      onTap: () async {
+                                        context.read<AuthCubit>().updateProfile(
+                                              currentUser: user,
+                                              name: _nameEditController.text
+                                                  .trim(),
+                                              email: _emailEditController.text
+                                                  .trim(),
+                                              address: _addressEditController
+                                                  .text
+                                                  .trim(),
+                                              image: _selectedImagePath,
+                                              visa: _visaEditController.text
+                                                  .trim(),
+                                            );
+                                        if (ctx.mounted) {
+                                          Navigator.pop(ctx);
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 15),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            CustomText(
+                                                text: 'Save',
+                                                color: Colors.white,
+                                                fontSize: 18),
+                                            const Icon(Icons.edit,
+                                                color: Colors.white),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                            },
+                          ),
+                          // Cancel button
                           GestureDetector(
                             onTap: () => Navigator.pop(context),
                             child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 15),
                               decoration: BoxDecoration(
                                 color: Colors.transparent,
-                                border: Border.all(color: AppColors.primary, width: 2),
+                                border: Border.all(
+                                    color: AppColors.primary, width: 2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
                                 children: [
-                                  CustomText(text: "Cancel", color: AppColors.primary, fontSize: 18),
-                                  Icon(Icons.login, color: AppColors.primary),
+                                  CustomText(
+                                      text: 'Cancel',
+                                      color: AppColors.primary,
+                                      fontSize: 18),
+                                  Icon(Icons.close, color: AppColors.primary),
                                 ],
                               ),
                             ),
                           ),
                         ],
                       ),
-                      Gap(20), // Bottom spacing
+                      const Gap(20),
                     ],
                   ),
                 ),
@@ -487,8 +502,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// REUSABLE TEXT FIELD WIDGET (kept in same file for easy junior reading)
+// ──────────────────────────────────────────────────────────────────────
 class CustomProfileTextField extends StatelessWidget {
-  CustomProfileTextField({
+  const CustomProfileTextField({
     super.key,
     required this.controller,
     required this.labelText,
@@ -501,15 +519,15 @@ class CustomProfileTextField extends StatelessWidget {
     this.onDelete,
   });
 
-  TextEditingController controller = TextEditingController();
+  final TextEditingController controller;
   final String labelText;
-  bool read;
-  Color? textFieldColor;
-  Color textColor;
-  TextAlign textAlign;
-  TextInputType keyboardType;
-  IconData? iconData;
-  void Function()? onDelete;
+  final bool read;
+  final Color? textFieldColor;
+  final Color textColor;
+  final TextAlign textAlign;
+  final TextInputType keyboardType;
+  final IconData? iconData;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -520,12 +538,14 @@ class CustomProfileTextField extends StatelessWidget {
       controller: controller,
       cursorColor: Colors.white,
       style: TextStyle(color: textColor),
-
       decoration: InputDecoration(
         fillColor: textFieldColor,
         filled: true,
         labelText: labelText,
-        icon: iconData != null ? GestureDetector(onTap: onDelete, child: Icon(iconData)) : null,
+        icon: iconData != null
+            ? GestureDetector(
+                onTap: onDelete, child: Icon(iconData))
+            : null,
         labelStyle: TextStyle(color: textColor, fontSize: 20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

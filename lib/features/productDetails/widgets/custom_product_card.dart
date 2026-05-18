@@ -42,12 +42,19 @@ class CustomProductCard extends StatelessWidget {
             children: [
               Transform.scale(
                 scale: 0.7,
-                child: Image.network(
-                  topping.image,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.contain,
-                ),
+                child: topping.image.isEmpty
+                    ? const SizedBox(width: 80, height: 80)
+                    : Image.network(
+                        topping.image,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const SizedBox(
+                                width: 80,
+                                height: 80,
+                                child: Icon(Icons.image_not_supported)),
+                      ),
               ),
               const Gap(8),
               CustomText(

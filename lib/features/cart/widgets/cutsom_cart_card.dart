@@ -43,7 +43,14 @@ class CustomCartCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Image.network(image, width: 100),
+                  image.isEmpty
+                      ? const SizedBox(width: 100, height: 100)
+                      : Image.network(
+                          image,
+                          width: 100,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox(width: 100, child: Icon(Icons.image_not_supported)),
+                        ),
                   CustomText(text: title, color: Colors.black,maxLine: 2,),
                   CustomText(text: desc, color: Colors.black),
                 ],
