@@ -29,6 +29,7 @@ class ProductRepo {
     }on DioError catch (e){
       throw ApiExceptions.handleError(e);
     }catch(e){
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
 
@@ -49,6 +50,7 @@ Future<List<ToppingModel?>> getToppings()async{
     }on DioError catch(e){
       throw ApiExceptions.handleError(e);
     }catch(e){
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
 }
@@ -61,6 +63,7 @@ Future<List<ToppingModel>> getSideTopping()async{
     }on DioError catch (e){
       throw ApiExceptions.handleError(e);
     }catch(e){
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
 

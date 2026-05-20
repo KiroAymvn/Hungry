@@ -21,31 +21,31 @@ else if (statusCode==500){
     }
     //if the error is exception
     switch (error.type) {
-      case DioErrorType.connectionError:
-        return ApiError(message: "Connection timeout, please check your internet.");
-      case DioErrorType.connectionTimeout:
-        return ApiError(message: "Connection timeout, please check your internet.");
+      case DioExceptionType.connectionError:
+        throw ApiError(message: "Connection timeout, please check your internet.");
+      case DioExceptionType.connectionTimeout:
+        throw ApiError(message: "Connection timeout, please check your internet.");
 
-      case DioErrorType.badResponse:
+      case DioExceptionType.badResponse:
         print(data);
         return ApiError(message: "Bad response: ${data["message"]?? 'Unknown'}");
 
-     case DioErrorType.sendTimeout:
+     case DioExceptionType.sendTimeout:
         return ApiError(message: "Send timeout, please try again.");
 
-      case DioErrorType.receiveTimeout:
+      case DioExceptionType.receiveTimeout:
         return ApiError(message: "Receive timeout, please check your connection.");
 
-      case DioErrorType.badCertificate:
+      case DioExceptionType.badCertificate:
         return ApiError(message: "Bad certificate, unable to verify server.");
 
-      case DioErrorType.cancel:
+      case DioExceptionType.cancel:
         return ApiError(message: "Request cancelled, please try again.");
 
-      case DioErrorType.connectionError:
+      case DioExceptionType.connectionError:
         return ApiError(message: "Connection error, please check your network.");
 
-      case DioErrorType.unknown:
+      case DioExceptionType.unknown:
       default:
         return ApiError(message: "An unexpected error occurred: ${error.message}");
     }

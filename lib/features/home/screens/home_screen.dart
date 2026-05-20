@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:hungry/core/constants/app_colors.dart';
+import 'package:hungry/features/favorite/cubit/favorite_state.dart';
 import 'package:hungry/features/home/cubit/home_cubit.dart';
 import 'package:hungry/features/home/cubit/home_state.dart';
 import 'package:hungry/features/home/widgets/custom_card.dart';
@@ -61,7 +62,7 @@ class HomeScreen extends StatelessWidget {
                       scrolledUnderElevation: 0,
                       automaticallyImplyLeading: false,
                       backgroundColor: AppColors.basic,
-                      toolbarHeight: 190,
+                      toolbarHeight: 200,
                       flexibleSpace: Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10.0, vertical: 20),
@@ -115,6 +116,7 @@ class HomeScreen extends StatelessWidget {
                               },
                               child: CustomCard(
                                 isFavorite: favIds.contains(product.id),
+                                isButtonLoading: state is HomeFavoriteLoadingForButton && state.productId == product.id,
                                 onTapFav: () => context
                                     .read<HomeCubit>()
                                     .toggleFavorite(product.id),
@@ -129,12 +131,11 @@ class HomeScreen extends StatelessWidget {
                           },
                           childCount: isLoading ? 6 : products.length,
                         ),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.65,
-                          mainAxisSpacing: 0,
-                          crossAxisSpacing: 6,
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 250,
+                          childAspectRatio: 0.75, // perfectly balances the height of the new simple card
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
                         ),
                       ),
                     ),

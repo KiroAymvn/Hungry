@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hungry/core/network/api_error.dart';
 import 'package:hungry/features/auth/cubit/auth_state.dart';
 import 'package:hungry/features/auth/data/auth_repo.dart';
 import 'package:hungry/features/auth/data/user_model.dart';
@@ -23,7 +24,12 @@ class AuthCubit extends Cubit<AuthState> {
         emit(AuthError('Login failed. Please try again.'));
       }
     } catch (e) {
-      emit(AuthError(e.toString()));
+      if (e is ApiError) {
+        emit(AuthError(e.message.toString()));
+
+      } else {
+        emit(AuthError('حدث خطأ أثناء تسجيل الدخول'));
+      }
     }
   }
 
@@ -44,7 +50,11 @@ class AuthCubit extends Cubit<AuthState> {
         emit(AuthError('Registration failed. Please try again.'));
       }
     } catch (e) {
-      emit(AuthError(e.toString()));
+      if (e is ApiError) {
+        emit(AuthError(e.message));
+      } else {
+        emit(AuthError(e.toString()));
+      }
     }
   }
 
@@ -63,7 +73,14 @@ class AuthCubit extends Cubit<AuthState> {
         emit(AuthInitial()); // no token → show login screen
       }
     } catch (e) {
-      emit(AuthInitial());
+      if(e is ApiError){
+      emit(AuthError(e.message!));
+      print("ApiError: ${e.message}");
+
+      }
+      else{
+         emit(AuthError("حدث خطأ أثناء تسجيل الدخول",));
+      }
     }
   }
 
@@ -80,7 +97,11 @@ class AuthCubit extends Cubit<AuthState> {
         emit(AuthGuest());
       }
     } catch (e) {
-      emit(AuthError(e.toString()));
+      if (e is ApiError) {
+        emit(AuthError(e.message));
+      } else {
+        emit(AuthError(e.toString()));
+      }
     }
   }
 
@@ -111,7 +132,11 @@ class AuthCubit extends Cubit<AuthState> {
         emit(AuthError('Update failed.'));
       }
     } catch (e) {
-      emit(AuthError(e.toString()));
+      if (e is ApiError) {
+        emit(AuthError(e.message));
+      } else {
+        emit(AuthError(e.toString()));
+      }
     }
   }
 
@@ -124,7 +149,11 @@ class AuthCubit extends Cubit<AuthState> {
       await _authRepo.logout();
       emit(AuthLoggedOut());
     } catch (e) {
-      emit(AuthError(e.toString()));
+      if (e is ApiError) {
+        emit(AuthError(e.message));
+      } else {
+        emit(AuthError(e.toString()));
+      }
     }
   }
 
@@ -137,7 +166,11 @@ class AuthCubit extends Cubit<AuthState> {
       await _authRepo.continueAsAGuest();
       emit(AuthGuest());
     } catch (e) {
-      emit(AuthError(e.toString()));
+      if (e is ApiError) {
+        emit(AuthError(e.message));
+      } else {
+        emit(AuthError(e.toString()));
+      }
     }
   }
 }

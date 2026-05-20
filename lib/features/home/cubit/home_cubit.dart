@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hungry/core/utils/pref_helper.dart';
 import 'package:hungry/features/favorite/data/favorite_repo.dart';
 import 'package:hungry/features/home/cubit/home_state.dart';
+import 'package:hungry/features/home/data/model/product_model.dart';
 import 'package:hungry/features/home/data/repo/product_repo.dart';
 
 /// HomeCubit fetches the product list and handles favorite toggling.
@@ -48,6 +49,11 @@ class HomeCubit extends Cubit<HomeState> {
     final currentState = state as HomeLoaded;
 
     try {
+      emit(HomeFavoriteLoadingForButton(
+        productId: productId,
+        products: currentState.products,
+        favoriteIds: currentState.favoriteIds,
+      ));
       final response = await _favoriteRepo.toggleFavorite(productId);
 
       if (response['code'] == 200) {

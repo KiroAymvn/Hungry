@@ -6,7 +6,7 @@ import 'package:hungry/core/constants/app_colors.dart';
 import '../../../shared/custom_text.dart';
 
 class CustomCard extends StatelessWidget {
-  CustomCard({
+  const CustomCard({
     super.key,
     required this.image,
     required this.title,
@@ -15,86 +15,118 @@ class CustomCard extends StatelessWidget {
     this.onTapFav,
     required this.productId,
     required this.favListId,
-     this.isFavorite=false
+    this.isFavorite = false,
+    this.isButtonLoading = false,
   });
 
   final String image, title, price, rate;
   final int productId;
-  List<int> favListId;
-  void Function()? onTapFav;
-bool isFavorite;
+  final List<int> favListId;
+  final void Function()? onTapFav;
+  final bool isFavorite;
+  final bool isButtonLoading;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2.0),
-      child: Stack(
-        children: [
-          Gap(75),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(50)),
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, Colors.white, Colors.blueGrey],
-                  tileMode: TileMode.clamp,
-                  begin: AlignmentGeometry.topLeft,
-                  stops: [0.001, 1.2, 0.9],
-                  end: AlignmentGeometry.bottomRight,
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Gap(75),
-                    CustomText(text: title, color: Colors.black, fontWeight: FontWeight.bold, maxLine: 5, fontSize: 18),
-                    Align(
-                      alignment: AlignmentGeometry.topLeft,
-                      child: CustomText(text: price + " LE", color: AppColors.darkCoffee),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Centered Image
+            Expanded(
+              child: image.isEmpty
+                  ? const Center(
+                      child: Icon(Icons.fastfood_rounded, size: 50, color: Colors.grey),
+                    )
+                  : Center(
+                      child: Image.network(
+                        image,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.fastfood_rounded, size: 50, color: Colors.grey),
+                      ),
                     ),
+            ),
+            const Gap(12),
+            // Title
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CustomText(
+                text: title,
+                color: Colors.black87,
+                fontWeight: FontWeight.bold,
+                maxLine: 2,
+                fontSize: 16,
+              ),
+            ),
+            const Gap(8),
+            // Rating, Price, and Favorite Button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Row(
                       children: [
-                        CustomText(text: "⭐ $rate", color: Colors.black),
-                        Spacer(),
-                        IconButton(
-                          onPressed: onTapFav,
-                          icon: isFavorite
-                              ? Icon(CupertinoIcons.heart_fill, color: Colors.red)
-                              : Icon(CupertinoIcons.heart),
+                        const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
+                        const Gap(4),
+                        CustomText(
+                          text: rate,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
                         ),
                       ],
                     ),
+                    const Gap(4),
+                    CustomText(
+                      text: "$price LE",
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
                   ],
                 ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: -10,
-            right: 0,
-            left: 10,
-            child: Stack(
-              fit: StackFit.loose,
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(left: 0, right: 15, bottom: -10, child: Image.asset("assets/icon/shadow.png")),
-                image.isEmpty
-                    ? const SizedBox(height: 150)
-                    : Image.network(
-                        image,
-                        height: 150,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const SizedBox(height: 150, child: Icon(Icons.image_not_supported)),
-                      ),
+                // Favorite Button
+                IconButton(
+                  onPressed: onTapFav,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: isButtonLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.red,
+                          ),
+                        )
+                      : Icon(
+                          isFavorite ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+                          color: isFavorite ? Colors.red : Colors.grey.shade400,
+                          size: 26,
+                        ),
+                ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

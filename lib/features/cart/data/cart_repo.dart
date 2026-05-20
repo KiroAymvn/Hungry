@@ -18,6 +18,7 @@ class CartRepo {
     } on DioException catch (e) {
       throw ApiExceptions.handleError(e);
     } catch (e) {
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
   }
@@ -33,6 +34,7 @@ class CartRepo {
     } on DioError catch (e) {
       throw ApiError(message: e.toString());
     } catch (e) {
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
   }
@@ -47,6 +49,7 @@ class CartRepo {
     } on DioError catch (e) {
       throw ApiExceptions.handleError(e);
     } catch (e) {
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
   }

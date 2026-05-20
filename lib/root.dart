@@ -40,6 +40,14 @@ class _RootState extends State<Root> {
     ProfileScreen(),
   ];
 
+  static const List<_NavItem> _navItems = [
+    _NavItem(icon: CupertinoIcons.house, activeIcon: CupertinoIcons.house_fill, label: 'Home'),
+    _NavItem(icon: CupertinoIcons.heart, activeIcon: CupertinoIcons.heart_fill, label: 'Fav'),
+    _NavItem(icon: CupertinoIcons.cart, activeIcon: CupertinoIcons.cart_fill, label: 'Cart'),
+    _NavItem(icon: Icons.local_restaurant_outlined, activeIcon: Icons.local_restaurant, label: 'Orders'),
+    _NavItem(icon: CupertinoIcons.person, activeIcon: CupertinoIcons.person_fill, label: 'Profile'),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -63,8 +71,7 @@ class _RootState extends State<Root> {
       providers: [
         // HomeCubit — loads products and handles fav toggle
         BlocProvider(
-          create: (_) =>
-              HomeCubit(ProductRepo(), FavoriteRepo())..loadHome(),
+          create: (_) => HomeCubit(ProductRepo(), FavoriteRepo())..loadHome(),
         ),
         // CartCubit — loads the cart
         BlocProvider(
@@ -82,23 +89,75 @@ class _RootState extends State<Root> {
           controller: _pageController,
           children: _screens,
         ),
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+        bottomNavigationBar: _CustomFloatingNavBar(
+          selectedIndex: _selectedIndex,
+          items: _navItems,
+          onTap: _onTabTapped,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Nav Item Data ──────────────────────────────────────────────────────────
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
+}
+
+// ─── Custom Floating Nav Bar ────────────────────────────────────────────────
+class _CustomFloatingNavBar extends StatelessWidget {
+  final int selectedIndex;
+  final List<_NavItem> items;
+  final ValueChanged<int> onTap;
+
+  const _CustomFloatingNavBar({
+    required this.selectedIndex,
+    required this.items,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.darkCoffee.withOpacity(0.5),
-                    AppColors.secondary.withOpacity(0.5),
-                  ],
+                color: AppColors.darkCoffee.withOpacity(0.92),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.08),
+                  width: 1,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.darkCoffee.withOpacity(0.4),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-              padding: const EdgeInsets.all(10),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: _buildBottomNavigationBar(),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(items.length, (index) {
+                  return _NavBarButton(
+                    item: items[index],
+                    isSelected: index == selectedIndex,
+                    onTap: () => onTap(index),
+                  );
+                }),
               ),
             ),
           ),
@@ -106,31 +165,49 @@ class _RootState extends State<Root> {
       ),
     );
   }
+}
 
-  BottomNavigationBar _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      onTap: _onTabTapped,
-      selectedItemColor: AppColors.primary,
-      unselectedLabelStyle: const TextStyle(color: AppColors.primary),
-      elevation: 0,
-      currentIndex: _selectedIndex,
-      showUnselectedLabels: false,
-      unselectedIconTheme:
-          const IconThemeData(color: AppColors.basic, fill: 0.2),
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.transparent,
-      items: const [
-        BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.home), label: 'Home'),
-        BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.heart), label: 'Fav'),
-        BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.cart), label: 'Cart'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.local_restaurant), label: 'Orders'),
-        BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.profile_circled), label: 'Profile'),
-      ],
+// ─── Individual Nav Button ──────────────────────────────────────────────────
+class _NavBarButton extends StatelessWidget {
+  final _NavItem item;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _NavBarButton({
+    required this.item,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.translucent,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Icon(
+                isSelected ? item.activeIcon : item.icon,
+                key: ValueKey(isSelected),
+                color: isSelected ? Colors.white : AppColors.basic,
+                size: 24,
+              ),
+            ),
+            
+          ],
+        ),
+      ),
     );
   }
 }

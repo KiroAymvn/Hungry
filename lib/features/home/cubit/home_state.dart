@@ -28,6 +28,17 @@ class HomeLoaded extends HomeState {
   }
 }
 
+/// When a specific product's favorite button is loading
+class HomeFavoriteLoadingForButton extends HomeLoaded {
+  final int productId;
+
+  HomeFavoriteLoadingForButton({
+    required this.productId,
+    required super.products,
+    required super.favoriteIds,
+  });
+}
+
 /// Something went wrong.
 class HomeError extends HomeState {
   final String message;

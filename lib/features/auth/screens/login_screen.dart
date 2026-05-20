@@ -53,7 +53,8 @@ class _LoginScreenState extends State<LoginScreen> {
               MaterialPageRoute(builder: (_) => const Root()),
             );
           } else if (state is AuthError) {
-            scaffoldMessengerError(context, state.message);
+            scaffoldMessengerError(context, state.message!);
+            print(state.message);
           }
         },
         builder: (context, state) {

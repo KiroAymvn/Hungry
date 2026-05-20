@@ -41,7 +41,11 @@ class AuthRepo {
     } on DioError catch (e) {
       throw ApiExceptions.handleError(e);
     } catch (e) {
-
+       // If it's already an ApiError, just pass it up to the Cubit exactly as it is!
+      if (e is ApiError) {
+        throw e; 
+      }
+      // If it's some other random error, wrap it.
       throw ApiError(message: e.toString());
     }
   }
@@ -80,6 +84,7 @@ class AuthRepo {
     } on DioError catch (e) {
       throw ApiExceptions.handleError(e);
     } catch (e) {
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
   }
@@ -105,6 +110,7 @@ class AuthRepo {
     } on DioError catch (e) {
       throw ApiExceptions.handleError(e);
     } catch (e) {
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
   }
@@ -152,6 +158,7 @@ class AuthRepo {
     } on DioError catch (e) {
       throw ApiExceptions.handleError(e);
     } catch (e) {
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
   }

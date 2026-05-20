@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hungry/core/network/api_error.dart';
 import 'package:hungry/core/utils/pref_helper.dart';
 import 'package:hungry/features/favorite/cubit/favorite_state.dart';
 import 'package:hungry/features/favorite/data/favorite_repo.dart';
@@ -13,12 +14,18 @@ class FavoriteCubit extends Cubit<FavoriteState> {
   // GET FAVORITES
   // ─────────────────────────────────────────────
   Future<void> getFavorites() async {
-    emit(FavoriteLoading());
+    emit(FavoriteLoading( ));
     try {
       final favorites = await _favoriteRepo.get();
       emit(FavoriteLoaded(favorites));
     } catch (e) {
-      emit(FavoriteError(e.toString()));
+      if(e is ApiError){
+      emit(FavoriteError(e.message!));
+
+      }
+      else{
+         emit(FavoriteError("حدث خطأ أثناء تحميل المفضلة",));
+      }
     }
   }
 

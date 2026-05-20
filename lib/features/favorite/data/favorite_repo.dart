@@ -25,6 +25,7 @@ ApiService _apiService=ApiService();
       throw ApiExceptions.handleError(e);
     }
     catch(e){
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
   }
@@ -44,6 +45,7 @@ ApiService _apiService=ApiService();
       throw ApiExceptions.handleError(e);
     }
     catch(e){
+      if (e is ApiError) throw e;
       throw ApiError(message: e.toString());
     }
   }

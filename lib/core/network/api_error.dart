@@ -24,4 +24,7 @@ class ApiError {
       statusCode: json['statusCode'] as int,
       message: json['message'] as String,
     );
-  }}
+  }
+
+
+}
