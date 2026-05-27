@@ -4,6 +4,7 @@ import 'package:hungry/core/constants/app_colors.dart';
 import 'package:hungry/core/utils/pref_helper.dart';
 import 'package:hungry/features/auth/screens/login_screen.dart';
 import 'package:hungry/features/auth/screens/signup_screen.dart';
+import 'package:hungry/features/home/screens/home_screen.dart';
 import 'package:hungry/root.dart';
 import 'package:hungry/splash_screen.dart';
 
@@ -24,7 +25,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: AppColors.basic,
       ),
-      home: SplashScreen(),
+      home:  HomeScreen(),
     );
   }
 }

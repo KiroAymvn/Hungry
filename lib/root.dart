@@ -33,7 +33,13 @@ class _RootState extends State<Root> {
 
   @override
   void initState() {
-    screens = [HomeScreen(), FavoriteScreen(), CartScreen(), OrderHistoryScreen(), ProfileScreen()];
+    screens = [
+      HomeScreen(),
+      FavoriteScreen(),
+      CartScreen(),
+      OrderHistoryScreen(),
+      ProfileScreen(),
+    ];
     pageController = PageController(initialPage: selectedIndex);
     super.initState();
   }
@@ -48,7 +54,11 @@ class _RootState extends State<Root> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: PageView(physics: NeverScrollableScrollPhysics(), controller: pageController, children: screens),
+      body: PageView(
+        physics: NeverScrollableScrollPhysics(),
+        controller: pageController,
+        children: screens,
+      ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(20.0),
         child: ClipRRect(
@@ -56,11 +66,17 @@ class _RootState extends State<Root> {
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.darkCoffee.withOpacity(0.5), AppColors.secondary.withOpacity(0.5)],
+                colors: [
+                  AppColors.darkCoffee.withOpacity(0.5),
+                  AppColors.secondary.withOpacity(0.5),
+                ],
               ),
             ),
             padding: EdgeInsets.all(10),
-            child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20), child: buildBottomNavigationBar()),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: buildBottomNavigationBar(),
+            ),
           ),
         ),
       ),
@@ -73,7 +89,7 @@ class _RootState extends State<Root> {
         toggle(index);
         pageController.jumpToPage(selectedIndex);
       },
-selectedItemColor: AppColors.primary,
+      selectedItemColor: AppColors.primary,
       unselectedLabelStyle: TextStyle(color: AppColors.primary),
       elevation: 0,
       currentIndex: selectedIndex,
@@ -85,8 +101,14 @@ selectedItemColor: AppColors.primary,
         BottomNavigationBarItem(icon: Icon(CupertinoIcons.home), label: "Home"),
         BottomNavigationBarItem(icon: Icon(CupertinoIcons.heart), label: "Fav"),
         BottomNavigationBarItem(icon: Icon(CupertinoIcons.cart), label: "Cart"),
-        BottomNavigationBarItem(icon: Icon(Icons.local_restaurant), label: "Order History"),
-        BottomNavigationBarItem(icon: Icon(CupertinoIcons.profile_circled), label: "Profile"),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.local_restaurant),
+          label: "Order History",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(CupertinoIcons.profile_circled),
+          label: "Profile",
+        ),
       ],
     );
   }

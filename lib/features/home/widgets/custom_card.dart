@@ -83,7 +83,14 @@ bool isFavorite;
               clipBehavior: Clip.none,
               children: [
                 Positioned(left: 0, right: 15, bottom: -10, child: Image.asset("assets/icon/shadow.png")),
-                Image.network(image, height: 150),
+                image.isNotEmpty
+                  ? Image.network(
+                    image,
+                    height: 150,
+                    errorBuilder: (context, error, stackTrace) =>
+                      Image.asset('assets/icon/cash.png', height: 150),
+                    )
+                  : Image.asset('assets/icon/cash.png', height: 150),
               ],
             ),
           ),

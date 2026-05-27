@@ -27,12 +27,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const List<String> categories = ["All", "Combo", "Classic", "Classic", "Classic", "Classic"];
+  static const List<String> categories = [
+    "All",
+    "Combo",
+    "Classic",
+    "Classic",
+    "Classic",
+    "Classic",
+  ];
   static const int selectedCategory = 0;
   late List<ProductModel> productsList = [];
   List<int> favListId = [];
   List<String> favListIdString = [];
-
 
   ProductRepo _productRepo = ProductRepo();
   FavoriteRepo _favoriteRepo = FavoriteRepo();
@@ -66,8 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             favListId.remove(productId);
           });
-        }
-        else {
+        } else {
           setState(() {
             favListId.add(productId);
           });
@@ -84,24 +89,22 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> loadFavIds()async{
-    final List=await PrefHelper.getFavListId();
-    if(!mounted)return;
+  Future<void> loadFavIds() async {
+    final List = await PrefHelper.getFavListId();
+    if (!mounted) return;
     setState(() {
-      favListIdString=List??[];
-      favListId=favListIdString.map((e)=>int.parse(e)).toList();
+      favListIdString = List ?? [];
+      favListId = favListIdString.map((e) => int.parse(e)).toList();
     });
   }
 
-
-// step 1 save the prouctID at List<int>
+  // step 1 save the prouctID at List<int>
   //step 2 set the productId in the shared Pref
   //step 3 get the List save in the shared pref
   // step 4 make new list<String> equal it with the getList of shared pref
   // step 5 convert the List<String> items to int and eqaual it with List<int>
   // reuse the List<int> and all needed functions
   // Future<void> loadFavIds() async {
-
 
   @override
   void initState() {
@@ -132,13 +135,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   backgroundColor: AppColors.basic,
                   toolbarHeight: 190,
                   flexibleSpace: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 20),
-                    child: Column(children: [Gap(50), CustomUserHeader(), Gap(10), CustomSearchField()]),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 20,
+                    ),
+                    child: Column(
+                      children: [
+                        Gap(50),
+                        CustomUserHeader(),
+                        Gap(10),
+                        CustomSearchField(),
+                      ],
+                    ),
                   ),
                 ),
                 //Categories
                 SliverToBoxAdapter(
-                  child: CustomFoodCategories(categories: categories, selectedCategory: selectedCategory),
+                  child: CustomFoodCategories(
+                    categories: categories,
+                    selectedCategory: selectedCategory,
+                  ),
                 ),
                 //Gridview
                 SliverPadding(
@@ -162,12 +178,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => ProductDetailsScreen(product: productsList[index])),
+                            MaterialPageRoute(
+                              builder: (context) => ProductDetailsScreen(
+                                product: productsList[index],
+                              ),
+                            ),
                           );
                         },
                         child: CustomCard(
-                          isFavorite: favListId!.contains(productsList[index].id),
-                          onTapFav: () => toggleFavorite(productsList[index].id),
+                          isFavorite: favListId!.contains(
+                            productsList[index].id,
+                          ),
+                          onTapFav: () =>
+                              toggleFavorite(productsList[index].id),
                           image: productsList[index].image,
                           title: productsList[index].name,
                           price: productsList[index].price,

@@ -21,7 +21,7 @@ class DioClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await PrefHelper.getToken();
+          final String? token = await PrefHelper.getToken();
           print(' API Request to: ${options.path}');
           print(' Token for request: ${token ?? 'null'}');
 
