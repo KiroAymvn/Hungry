@@ -24,7 +24,7 @@ class HomeCubit extends Cubit<HomeState> {
         _loadFavIds(),
       ]);
 
-      final products = results[0] as dynamic;
+      final products = results[0] as List<ProductModel>;
       final favIds = results[1] as List<int>;
 
       emit(HomeLoaded(products: products, favoriteIds: favIds));
